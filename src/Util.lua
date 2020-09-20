@@ -83,3 +83,17 @@ function print_r ( t )
     end
     print()
 end
+
+function validateMouseInput(mouseX, mouseY, xMin, xMax, yMin, yMax)
+  -- validate that the mouse is within the game screen and on any particular tile
+  -- board is at coords X = VIRTUAL_WIDTH - 272, Y = 16
+  
+  if not mouseX and not mouseY then
+    return false
+  --elseif mouseX >= VIRTUAL_WIDTH - 272 and mouseX <= 496 and mouseY >= 16 and mouseY <= 272 then
+  elseif mouseX >= xMin and mouseX <= xMax and mouseY >= yMin and mouseY <= yMax then
+    return true
+  else
+    return false
+  end
+end

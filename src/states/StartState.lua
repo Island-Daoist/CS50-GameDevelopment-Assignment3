@@ -72,15 +72,24 @@ function StartState:update(dt)
 
     -- as long as can still input, i.e., we're not in a transition...
     if not self.pauseInput then
+      
+        -- get mouse co-ordinates
+        local mouseX, mouseY = push:toGame(love.mouse.getPosition())
         
         -- change menu selection
         if love.keyboard.wasPressed('up') or love.keyboard.wasPressed('down') then
             self.currentMenuItem = self.currentMenuItem == 1 and 2 or 1
             gSounds['select']:play()
+        elseif validateMouseInput(mouseX, mouseY,226,286,164,180) then
+          self.currentMenuItem = 1
+          gSounds['select']:play()
+        elseif validateMouseInput(mouseX, mouseY,216,296,189,205) then
+          self.currentMenuItem = 2
+          gSounds['select']:play()
         end
 
         -- switch to another state via one of the menu options
-        if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') then
+        if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') or love.mouse.wasPressed(1) then
             if self.currentMenuItem == 1 then
                 
                 -- tween, using Timer, the transition rect's alpha to 255, then

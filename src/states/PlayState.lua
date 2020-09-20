@@ -63,6 +63,9 @@ function PlayState:enter(params)
     -- spawn a board and place it toward the right
     self.board = params.board or Board(VIRTUAL_WIDTH - 272, 16, self.level)
 
+    -- create a variable to hold a copy of the board to be used for validation
+    self.boardCopy = Board(VIRTUAL_WIDTH - 272, 16, self.level)
+
     -- grab score from params if it was passed
     self.score = params.score or 0
 
@@ -104,74 +107,98 @@ function PlayState:update(dt)
             score = self.score
         })
     end
+    
+    -- validate board as valid
+    local boardValid = self:validateBoard()
+    if boardValid then
+      -- store mouse position to use for selecting and swaping tiles
+      local mouseX, mouseY = push:toGame(love.mouse.getPosition())
 
-    if self.canInput then
-        -- move cursor around based on bounds of grid, playing sounds
-        if love.keyboard.wasPressed('up') then
-            self.boardHighlightY = math.max(0, self.boardHighlightY - 1)
-            gSounds['select']:play()
-        elseif love.keyboard.wasPressed('down') then
-            self.boardHighlightY = math.min(7, self.boardHighlightY + 1)
-            gSounds['select']:play()
-        elseif love.keyboard.wasPressed('left') then
-            self.boardHighlightX = math.max(0, self.boardHighlightX - 1)
-            gSounds['select']:play()
-        elseif love.keyboard.wasPressed('right') then
-            self.boardHighlightX = math.min(7, self.boardHighlightX + 1)
-            gSounds['select']:play()
-        end
+      if self.canInput then
+          -- move cursor around based on bounds of grid, playing sounds
+          if love.keyboard.wasPressed('up') then
+              self.boardHighlightY = math.max(0, self.boardHighlightY - 1)
+              gSounds['select']:play()
+          elseif love.keyboard.wasPressed('down') then
+              self.boardHighlightY = math.min(7, self.boardHighlightY + 1)
+              gSounds['select']:play()
+          elseif love.keyboard.wasPressed('left') then
+              self.boardHighlightX = math.max(0, self.boardHighlightX - 1)
+              gSounds['select']:play()
+          elseif love.keyboard.wasPressed('right') then
+              self.boardHighlightX = math.min(7, self.boardHighlightX + 1)
+              gSounds['select']:play()
+          elseif validateMouseInput(mouseX, mouseY, VIRTUAL_WIDTH - 272,
+            496, 16, 272) then
+              if self.boardHighlightX == math.floor((mouseX - 240) / 32) and
+                self.boardHighlightY == math.floor((mouseY - 16) / 32) then
+                  ::continue::
+              else
+                self.boardHighlightX = math.floor((mouseX - 240) / 32)
+                self.boardHighlightY = math.floor((mouseY - 16) / 32)
+                gSounds['select']:play()
+              end
+         end
+          
+          -- add functionality to check board for possible matches. If no possible move can result in a match shuffle board
+          -- then implement the funcionality to allow moves only if the result is a match
+          -- may want to simulate moves in all four possible directions for each tile and see if a true result is returned
 
-        -- if we've pressed enter, to select or deselect a tile...
-        if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') then
-            
-            -- if same tile as currently highlighted, deselect
-            local x = self.boardHighlightX + 1
-            local y = self.boardHighlightY + 1
-            
-            -- if nothing is highlighted, highlight current tile
-            if not self.highlightedTile then
-                self.highlightedTile = self.board.tiles[y][x]
+          -- if we've pressed enter, to select or deselect a tile...
+          if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') or love.mouse.wasPressed(1) then
+              -- if same tile as currently highlighted, deselect
+              local x = self.boardHighlightX + 1
+              local y = self.boardHighlightY + 1
+              
+              -- if nothing is highlighted, highlight current tile
+              if not self.highlightedTile then
+                  self.highlightedTile = self.board.tiles[y][x]
 
-            -- if we select the position already highlighted, remove highlight
-            elseif self.highlightedTile == self.board.tiles[y][x] then
-                self.highlightedTile = nil
+              -- if we select the position already highlighted, remove highlight
+              elseif self.highlightedTile == self.board.tiles[y][x] then
+                  self.highlightedTile = nil
 
-            -- if the difference between X and Y combined of this highlighted tile
-            -- vs the previous is not equal to 1, also remove highlight
-            elseif math.abs(self.highlightedTile.gridX - x) + math.abs(self.highlightedTile.gridY - y) > 1 then
-                gSounds['error']:play()
-                self.highlightedTile = nil
-            else
-                
-                -- swap grid positions of tiles
-                local tempX = self.highlightedTile.gridX
-                local tempY = self.highlightedTile.gridY
-
-                local newTile = self.board.tiles[y][x]
-
-                self.highlightedTile.gridX = newTile.gridX
-                self.highlightedTile.gridY = newTile.gridY
-                newTile.gridX = tempX
-                newTile.gridY = tempY
-
-                -- swap tiles in the tiles table
-                self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX] =
-                    self.highlightedTile
-
-                self.board.tiles[newTile.gridY][newTile.gridX] = newTile
-
-                -- tween coordinates between the two so they swap
-                Timer.tween(0.1, {
-                    [self.highlightedTile] = {x = newTile.x, y = newTile.y},
-                    [newTile] = {x = self.highlightedTile.x, y = self.highlightedTile.y}
-                })
-                
-                -- once the swap is finished, we can tween falling blocks as needed
-                :finish(function()
-                    self:calculateMatches()
-                end)
-            end
-        end
+              -- if the difference between X and Y combined of this highlighted tile
+              -- vs the previous is not equal to 1, also remove highlight
+              elseif math.abs(self.highlightedTile.gridX - x) + math.abs(self.highlightedTile.gridY - y) > 1 then
+                  gSounds['error']:play()
+                  self.highlightedTile = nil
+              else                    
+                  -- swap grid positions of tiles
+                  newTile = self:performSwap(self.board, self.highlightedTile, y, x)
+                  
+                  if self.board:calculateMatches() then
+                    -- tween coordinates between the two so they swap
+                    Timer.tween(0.1, {
+                        [self.highlightedTile] = {x = newTile.x, y = newTile.y},
+                        [newTile] = {x = self.highlightedTile.x, y = self.highlightedTile.y}
+                    })
+                    
+                    -- once the swap is finished, we can tween falling blocks as needed
+                    :finish(function()
+                        self:calculateMatches()
+                    end)
+                  else
+                    self:performSwap(self.board, self.highlightedTile, newTile.gridY, newTile.gridX)
+                    gSounds['error']:play()
+                    self.highlightedTile = nil
+                  end
+              end
+          end
+      end
+    else
+      -- once the tiles are moved we can reset the board
+      --[[local first_tween, second_tween = self.board:shuffleTiles()
+      if first_tween and second_tween then
+        Timer.tween(3, first_tween)
+        Timer.tween(3, second_tween)
+      end]]
+      local tweenToCenter, tweenReset = self.board:getShuffleTweens()
+      Timer.tween(0.5, tweenToCenter)
+      :finish(function()
+        self.board:shuffleTiles()
+        Timer.tween(0.5, tweenReset)
+      end)
     end
 
     Timer.update(dt)
@@ -222,6 +249,101 @@ function PlayState:calculateMatches()
         self.canInput = true
     end
 end
+
+
+function PlayState:performSwap(board, swapTile, y, x)  
+  local tempX = swapTile.gridX
+  local tempY = swapTile.gridY
+
+  local newTile = board.tiles[y][x]
+
+  swapTile.gridX = newTile.gridX
+  swapTile.gridY = newTile.gridY
+  newTile.gridX = tempX
+  newTile.gridY = tempY
+
+  -- swap tiles in the tiles table
+  board.tiles[swapTile.gridY][swapTile.gridX] =
+      swapTile
+
+  board.tiles[newTile.gridY][newTile.gridX] = newTile
+  
+  return newTile
+end
+
+
+function PlayState:validateBoard()
+  -- use function to check that the board in play has valid moves that can be made to result in a match of 3 or more
+  
+  -- update the boardCopy to reflect the current state of the active game board
+  for y = 1, 8 do
+    for x = 1, 8 do
+      self.boardCopy.tiles[y][x].gridX = self.board.tiles[y][x].gridX
+      self.boardCopy.tiles[y][x].gridY = self.board.tiles[y][x].gridY
+      self.boardCopy.tiles[y][x].color = self.board.tiles[y][x].color
+      self.boardCopy.tiles[y][x].variety = self.board.tiles[y][x].variety
+      self.boardCopy.tiles[y][x].isShiney = self.board.tiles[y][x].isShiney
+    end
+  end
+  
+  local matches = nil
+  local tileToSwap = nil
+  local swappedTile = nil
+
+  for y = 1, 8 do
+    for x = 1, 8 do
+      -- set variable holding tile to be swapped
+      tileToSwap = self.boardCopy.tiles[y][x]
+      -- check if swap can be made with tile to the left
+      if x < 8 then
+        swappedTile = self:performSwap(self.boardCopy, tileToSwap, y, x+1)
+        matches = self.boardCopy:calculateMatches()
+        if matches then
+          --self:performSwap(self.boardCopy, tileToSwap, y, x+1)
+          return true
+        end
+        self:performSwap(self.boardCopy, tileToSwap, y, x)
+      end
+      
+      -- check if swap can be made with tile to the right
+      if x > 1 then
+        swappedTile = self:performSwap(self.boardCopy, tileToSwap, y, x-1)
+        matches = self.boardCopy:calculateMatches()
+        if matches then
+          --self:performSwap(self.boardCopy, tileToSwap, y, x-1)
+          return true
+        end
+        self:performSwap(self.boardCopy, tileToSwap, y, x)
+      end
+      
+      -- check if swap can be made with tile from below
+      if y < 8 then
+        swappedTile = self:performSwap(self.boardCopy, tileToSwap, y+1, x)
+        matches = self.boardCopy:calculateMatches()
+        if matches then
+          --self:performSwap(self.boardCopy, tileToSwap, y+1, x)
+          return true
+        end        
+        self:performSwap(self.boardCopy, tileToSwap, y, x)
+      end
+      
+      -- check if swap can be made with tile from above
+      if y > 1 then
+        swappedTile = self:performSwap(self.boardCopy, tileToSwap, y-1, x)
+        matches = self.boardCopy:calculateMatches()
+        if matches then
+          --self:performSwap(self.boardCopy, tileToSwap, y-1, x)
+          return true
+        end        
+        self:performSwap(self.boardCopy, tileToSwap, y, x)
+      end
+    end
+  end
+  --if not matches then
+    return false
+  --end
+end
+
 
 function PlayState:render()
     -- render board of tiles

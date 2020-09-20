@@ -66,6 +66,42 @@ function Board:initializeTiles(variety_scale, colour_randomiser)
     end
 end
 
+function Board:getShuffleTweens()
+  local tweensToCenter = {}
+  local tweensReset = {}
+  
+  for tileY = 1, 8 do
+    for tileX = 1, 8 do
+      local tile = self.tiles[tileY][tileX]
+      tweensToCenter[tile] = {
+        x = 96,
+        y = 96
+      }
+      tweensReset[tile] = {
+        x = (tile.gridX - 1) * 32,
+        y = (tile.gridY - 1) *32
+      }
+    end
+  end
+  
+  return tweensToCenter, tweensReset
+end
+
+function Board:shuffleTiles()
+
+  for y = 1, 8 do
+    for x = 1, 8 do
+      self.tiles[y][x].color = math.random(unpack(self.colour_randomiser))
+      self.tiles[y][x].variety = math.random(unpack(self.variety_scale))
+      self.tiles[y][x].isShiney = math.random(16) == 1 and true or false
+    end
+  end
+  
+  if self:calculateMatches() then
+    self:shuffleTiles()
+  end
+end
+
 --[[
     Goes left to right, top to bottom in the board, calculating matches by counting consecutive
     tiles of the same color. Doesn't need to check the last tile in every row or column if the 
@@ -93,7 +129,7 @@ function Board:calculateMatches()
           else
             -- set this as the new color we want to watch for
             colorToMatch = self.tiles[y][x].color
-            varietyToMatch = self.tiles[x][y].variety
+            varietyToMatch = self.tiles[y][x].variety
 
             -- if we have a match of 3 or more up to now, add it to our matches table
             if matchNum >= 3 then
