@@ -99,6 +99,8 @@ function Board:shuffleTiles()
   
   if self:calculateMatches() then
     self:shuffleTiles()
+  else
+    return true
   end
 end
 

@@ -196,8 +196,9 @@ function PlayState:update(dt)
       local tweenToCenter, tweenReset = self.board:getShuffleTweens()
       Timer.tween(0.5, tweenToCenter)
       :finish(function()
-        self.board:shuffleTiles()
-        Timer.tween(0.5, tweenReset)
+        if self.board:shuffleTiles() then
+          Timer.tween(0.5, tweenReset)
+        end
       end)
     end
 
