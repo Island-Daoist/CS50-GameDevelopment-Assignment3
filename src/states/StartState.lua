@@ -81,11 +81,15 @@ function StartState:update(dt)
             self.currentMenuItem = self.currentMenuItem == 1 and 2 or 1
             gSounds['select']:play()
         elseif validateMouseInput(mouseX, mouseY,226,286,164,180) then
-          self.currentMenuItem = 1
-          gSounds['select']:play()
+          if self.currentMenuItem == 2 then
+            self.currentMenuItem = 1
+            gSounds['select']:play()
+          end
         elseif validateMouseInput(mouseX, mouseY,216,296,189,205) then
-          self.currentMenuItem = 2
-          gSounds['select']:play()
+          if self.currentMenuItem == 1 then
+            self.currentMenuItem = 2
+            gSounds['select']:play()
+          end
         end
 
         -- switch to another state via one of the menu options

@@ -187,12 +187,6 @@ function PlayState:update(dt)
           end
       end
     else
-      -- once the tiles are moved we can reset the board
-      --[[local first_tween, second_tween = self.board:shuffleTiles()
-      if first_tween and second_tween then
-        Timer.tween(3, first_tween)
-        Timer.tween(3, second_tween)
-      end]]
       local tweenToCenter, tweenReset = self.board:getShuffleTweens()
       Timer.tween(0.5, tweenToCenter)
       :finish(function()
@@ -300,7 +294,6 @@ function PlayState:validateBoard()
         swappedTile = self:performSwap(self.boardCopy, tileToSwap, y, x+1)
         matches = self.boardCopy:calculateMatches()
         if matches then
-          --self:performSwap(self.boardCopy, tileToSwap, y, x+1)
           return true
         end
         self:performSwap(self.boardCopy, tileToSwap, y, x)
@@ -311,7 +304,6 @@ function PlayState:validateBoard()
         swappedTile = self:performSwap(self.boardCopy, tileToSwap, y, x-1)
         matches = self.boardCopy:calculateMatches()
         if matches then
-          --self:performSwap(self.boardCopy, tileToSwap, y, x-1)
           return true
         end
         self:performSwap(self.boardCopy, tileToSwap, y, x)
@@ -322,7 +314,6 @@ function PlayState:validateBoard()
         swappedTile = self:performSwap(self.boardCopy, tileToSwap, y+1, x)
         matches = self.boardCopy:calculateMatches()
         if matches then
-          --self:performSwap(self.boardCopy, tileToSwap, y+1, x)
           return true
         end        
         self:performSwap(self.boardCopy, tileToSwap, y, x)
@@ -333,16 +324,13 @@ function PlayState:validateBoard()
         swappedTile = self:performSwap(self.boardCopy, tileToSwap, y-1, x)
         matches = self.boardCopy:calculateMatches()
         if matches then
-          --self:performSwap(self.boardCopy, tileToSwap, y-1, x)
           return true
         end        
         self:performSwap(self.boardCopy, tileToSwap, y, x)
       end
     end
   end
-  --if not matches then
-    return false
-  --end
+  return false
 end
 
 

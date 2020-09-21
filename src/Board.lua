@@ -18,6 +18,8 @@ function Board:init(x, y, level_adjust)
     self.y = y
     self.matches = {}
     
+    -- limits the number of different coloured tiles that can be present on board at any one time,
+    -- this enables better playability of the game
     self.colour_randomiser = math.random(5)
     if self.colour_randomiser == 1 then
       self.colour_randomiser = {1, 6}
@@ -28,7 +30,8 @@ function Board:init(x, y, level_adjust)
     else
       self.colour_randomiser = {12, 18}
     end
-    
+    -- limits the different varieties of each tile that is present at any time,
+    -- enabling better playability of the game
     self.level_adjust = level_adjust
     if self.level_adjust == 1 then
       self.variety_scale = {1,}
@@ -67,6 +70,7 @@ function Board:initializeTiles(variety_scale, colour_randomiser)
 end
 
 function Board:getShuffleTweens()
+  -- function that returns tables of tiles to tween during shuffling of board
   local tweensToCenter = {}
   local tweensReset = {}
   
@@ -88,7 +92,7 @@ function Board:getShuffleTweens()
 end
 
 function Board:shuffleTiles()
-
+  -- shuffles tiles to random new varients
   for y = 1, 8 do
     for x = 1, 8 do
       self.tiles[y][x].color = math.random(unpack(self.colour_randomiser))
@@ -96,7 +100,7 @@ function Board:shuffleTiles()
       self.tiles[y][x].isShiney = math.random(16) == 1 and true or false
     end
   end
-  
+  -- if in shuffling the board there is a match present then re-shuffle.
   if self:calculateMatches() then
     self:shuffleTiles()
   else

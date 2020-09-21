@@ -73,6 +73,7 @@ function Tile:render(x, y)
 end
 
 function Tile:renderParticles(x, y)
+  -- function to assist in rendering particle system for shiny tiles
   self.psystem:emit(24)
   love.graphics.draw(self.psystem, self.x + x + 16, self.y + y + 16)
 end
